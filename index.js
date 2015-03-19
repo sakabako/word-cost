@@ -1,4 +1,4 @@
-var http = require('http');
+//var http = require('http');
 
 var sameHandCost = 2;
 var sameFingerCost = 4;
@@ -31,6 +31,7 @@ var keyCost = {
 	x: 1,
 	y: 2,
 	z: 1,
+	'-': 3
 };
 
 var hand = {
@@ -60,6 +61,7 @@ var hand = {
 	x: 1,
 	y: 2,
 	z: 1,
+	'-': 2
 };
 
 var finger = {
@@ -89,6 +91,7 @@ var finger = {
 	x: 3,
 	y: 5,
 	z: 2,
+	'-': 7
 };
 
 function calculateScore (word) {
@@ -121,9 +124,52 @@ function calculateScore (word) {
 	return total;
 }
 
-http.get('http://words.bighugelabs.com/api/2/3adad4676426edc5a0b3c7860bb4866c/service/json', function (res) {
-	res.on('data', function (data) {
-		data = JSON.parse(data.toString());
+// http.get('http://words.bighugelabs.com/api/2/3adad4676426edc5a0b3c7860bb4866c/service/json', function (res) {
+// 	res.on('data', function (data) {
+// 		data = JSON.parse(data.toString());
+
+// 		var types = Object.keys(data);
+
+// 		var results = [];
+
+// 		types.forEach(function (type) {
+// 			data[type].syn.filter(function (word) {
+// 				return word.indexOf(' ') === -1;
+// 			}).forEach(function (word) {
+// 				var score = calculateScore(word);
+// 				results.push({
+// 					word: word,
+// 					score: score
+// 				});
+// 			});
+// 		});
+
+// 		results.sort(function (a, b) {
+// 			return a.score - b.score;
+// 		});
+
+// 		results.forEach(function (result) {
+// 			console.log( result.score +' '+ result.word );
+// 		});
+// 	});
+// });
+
+
+
+var $input = $('#mr_input');
+var $output = $('#mr_output');
+
+var cache = {};
+
+var latest;
+function makeProcessData (word) {
+	latest = word;
+	return function (data) {
+		console.log(data);
+
+		if (word !== latest) {
+			return;
+		}
 
 		var types = Object.keys(data);
 
@@ -145,14 +191,35 @@ http.get('http://words.bighugelabs.com/api/2/3adad4676426edc5a0b3c7860bb4866c/se
 			return a.score - b.score;
 		});
 
-		results.forEach(function (result) {
-			console.log( result.score +' '+ result.word );
+		var strArray = results.map(function (result) {
+			return '<li><span class="word">'+result.word +'</span> <span class="score">'+ result.score +'</span></li>';
 		});
-	});
+
+		$output.html(strArray.join(''));
+	};
+}
+
+function makeShowError(word) {
+	latest = word;
+	return function () {
+		$output.html('<li>"'+word+'" not found</li>');
+	};
+}
+
+$input.on('keyup', function (event) {
+	$output.html('');
+	if (event.keyCode === 13) {
+		var word = $input.val().trim();
+		if (word.indexOf(' ') !== -1) {
+			alert('no spaces!');
+			return;
+		}
+		if (!cache[word]) {
+			cache[word] = $.getJSON('http://words.bighugelabs.com/api/2/3adad4676426edc5a0b3c7860bb4866c/'+word+'/json');
+		}
+		cache[word].then(makeProcessData(word), makeShowError(word));
+	}
 });
-
-
-
 
 
 
