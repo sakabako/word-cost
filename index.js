@@ -192,7 +192,7 @@ function makeProcessData (word) {
 		});
 
 		var strArray = results.map(function (result) {
-			return '<li><span class="word">'+result.word +'</span> <span class="score">'+ result.score +'</span></li>';
+			return '<li><a class="word" href="#'+result.word+'">'+result.word +'</a> <span class="score">'+ result.score +'</span></li>';
 		});
 
 		$output.html(strArray.join(''));
@@ -205,22 +205,30 @@ function makeShowError(word) {
 		$output.html('<li>"'+word+'" not found</li>');
 	};
 }
+function lookUp (word) {
+	if (word.indexOf(' ') !== -1) {
+		alert('no spaces!');
+		return;
+	}
+	if (!cache[word]) {
+		cache[word] = $.getJSON('http://words.bighugelabs.com/api/2/3adad4676426edc5a0b3c7860bb4866c/'+word+'/json');
+	}
+	cache[word].then(makeProcessData(word), makeShowError(word));
+}
 
 $input.on('keyup', function (event) {
 	$output.html('');
 	if (event.keyCode === 13) {
 		var word = $input.val().trim();
-		if (word.indexOf(' ') !== -1) {
-			alert('no spaces!');
-			return;
-		}
-		if (!cache[word]) {
-			cache[word] = $.getJSON('http://words.bighugelabs.com/api/2/3adad4676426edc5a0b3c7860bb4866c/'+word+'/json');
-		}
-		cache[word].then(makeProcessData(word), makeShowError(word));
+		lookUp(word);
 	}
 });
-
+$output.on('click', 'a', function (event) {
+	var word = event.target.innerHTML;
+	$input.val(word);
+	lookUp(word);
+	event.preventDefault();
+});
 
 
 
